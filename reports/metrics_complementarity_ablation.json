@@ -1,0 +1,74 @@
+{
+  "constrained_net_revenue_eur": 2573658.64,
+  "constrained_solve_seconds": 4.51,
+  "example_hours": [
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 11.811,
+      "hour_index": 3182,
+      "price_eur_mwh": -85.08
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 11.811,
+      "hour_index": 2918,
+      "price_eur_mwh": -79.98
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 21.5,
+      "hour_index": 3178,
+      "price_eur_mwh": -69.64
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 11.811,
+      "hour_index": 2846,
+      "price_eur_mwh": -52.43
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 11.811,
+      "hour_index": 4694,
+      "price_eur_mwh": -51.82
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 11.811,
+      "hour_index": 3995,
+      "price_eur_mwh": -44.92
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 21.5,
+      "hour_index": 4690,
+      "price_eur_mwh": -40.08
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 11.811,
+      "hour_index": 2510,
+      "price_eur_mwh": -40.05
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 21.5,
+      "hour_index": 2914,
+      "price_eur_mwh": -40.05
+    },
+    {
+      "charge_mw": 25.0,
+      "discharge_mw": 21.5,
+      "hour_index": 2842,
+      "price_eur_mwh": -36.72
+    }
+  ],
+  "fictitious_revenue_eur": 1208.67,
+  "fictitious_revenue_pct": 0.047,
+  "negative_price_hours_in_year": 457,
+  "physical_violations_in_relaxed_schedule": 28,
+  "relaxed_net_revenue_eur": 2574867.31,
+  "relaxed_solve_seconds": 0.0,
+  "simultaneous_hours": 28,
+  "simultaneous_hours_at_negative_prices": 28
+}
