@@ -1,0 +1,27 @@
+# Data (regenerable via `make data`)
+data/raw/*
+data/processed/*
+!data/**/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Solver scratch files
+*.lp
+*.mps
+*.sol
+
+# Notebooks
+.ipynb_checkpoints/
+
+.env
+.DS_Store
+Thumbs.db

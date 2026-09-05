@@ -1,0 +1,68 @@
+# Single source of truth for every parameter that affects a reported number.
+
+seed: 42
+
+data:
+  # Fraunhofer ISE energy-charts API. Open, no registration, CC BY 4.0.
+  # Underlying source: Bundesnetzagentur | SMARD.de
+  api_url: https://api.energy-charts.info/price
+  bidding_zone: DE-LU
+  raw_dir: data/raw
+  # Strict temporal split. The forecaster only ever sees 2023; every euro
+  # reported is earned on 2024, which it has never seen.
+  train_year: 2023
+  test_year: 2024
+
+# A 100 MWh / 25 MW system: a four-hour battery, the standard configuration
+# for price arbitrage. Values are representative of a utility-scale
+# lithium-ion BESS.
+battery:
+  energy_capacity_mwh: 100.0
+  power_mw: 25.0
+  # Round-trip efficiency, grid to grid. Split symmetrically into charge and
+  # discharge efficiencies of sqrt(0.86) = 0.9274 each.
+  round_trip_efficiency: 0.86
+  # Depth-of-discharge limits. Operating between 10% and 90% rather than
+  # 0-100% is standard practice: the extremes are where cells degrade fastest.
+  soc_min_fraction: 0.10
+  soc_max_fraction: 0.90
+  initial_soc_fraction: 0.50
+  # Marginal cost of throughput, a linear proxy for cycle ageing. Without it
+  # the optimiser cycles the battery for arbitrarily small spreads, which is
+  # profitable on paper and destroys the asset in reality.
+  degradation_cost_eur_per_mwh: 3.0
+
+optimization:
+  solver: HiGHS            # falls back to CBC if unavailable
+  # Rolling horizon: plan this many hours ahead, then commit only the first
+  # `commit_hours`. Matches how a real trading desk operates against the
+  # day-ahead market.
+  horizon_hours: 48
+  commit_hours: 24
+  time_limit_seconds: 60
+  # Forbid simultaneous charging and discharging. See src/battery/optimize.py:
+  # dropping this constraint lets the model invent a money pump during
+  # negative-price hours.
+  enforce_complementarity: true
+
+forecast:
+  # Lag features in hours. 24 and 168 capture daily and weekly seasonality,
+  # which dominate electricity prices.
+  lags: [24, 25, 26, 48, 168, 169]
+  rolling_windows: [24, 168]
+  gbm:
+    n_estimators: 400
+    learning_rate: 0.05
+    max_depth: 5
+    subsample: 0.8
+
+monte_carlo:
+  n_simulations: 500
+  # Forecast errors are resampled in day-long blocks rather than hour by hour.
+  # Hourly errors are strongly autocorrelated; independent resampling would
+  # cancel them out and produce a fictitiously narrow confidence interval.
+  block_hours: 24
+
+paths:
+  reports_dir: reports
+  figures_dir: reports/figures
