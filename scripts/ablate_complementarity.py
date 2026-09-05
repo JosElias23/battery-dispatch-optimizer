@@ -29,8 +29,11 @@ CHUNK_HOURS = 24 * 14
 
 def relaxed_dispatch(prices, spec, solver_name):
     """Perfect-foresight dispatch with the binary removed."""
+    from battery.model import DispatchResult
+
     charge, discharge, soc_trace = [], [], []
     soc = spec.initial_soc_mwh
+    elapsed = 0.0
     for start in range(0, len(prices), CHUNK_HOURS):
         window = prices[start : start + CHUNK_HOURS]
         result = solve_dispatch(
@@ -41,9 +44,12 @@ def relaxed_dispatch(prices, spec, solver_name):
         discharge.extend(result.discharge_mw)
         soc_trace.extend(result.soc_mwh)
         soc = result.soc_mwh[-1]
-    from battery.model import DispatchResult
+        elapsed += result.solve_seconds
 
-    return DispatchResult(charge, discharge, soc_trace, list(prices), status="Relaxed")
+    return DispatchResult(
+        charge, discharge, soc_trace, list(prices),
+        status="Relaxed", solve_seconds=elapsed,
+    )
 
 
 def main() -> int:
