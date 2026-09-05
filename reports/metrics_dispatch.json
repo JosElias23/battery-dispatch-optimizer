@@ -1,0 +1,121 @@
+{
+  "battery": {
+    "degradation_cost_eur_per_mwh": 3.0,
+    "energy_capacity_mwh": 100.0,
+    "power_mw": 25.0,
+    "round_trip_efficiency": 0.86,
+    "usable_capacity_mwh": 80.0
+  },
+  "data": {
+    "license": "CC BY 4.0 (creativecommons.org/licenses/by/4.0) from Bundesnetzagentur | SMARD.de",
+    "test": {
+      "end": "2024-12-31T22:00:00+00:00",
+      "max_eur_mwh": 936.28,
+      "mean_daily_spread_eur_mwh": 111.47,
+      "mean_eur_mwh": 78.51,
+      "min_eur_mwh": -135.45,
+      "n_hours": 8784,
+      "negative_hours": 457,
+      "negative_hours_pct": 5.2,
+      "start": "2023-12-31T23:00:00+00:00",
+      "std_eur_mwh": 52.72
+    },
+    "train": {
+      "end": "2023-12-31T22:00:00+00:00",
+      "max_eur_mwh": 524.27,
+      "mean_daily_spread_eur_mwh": 98.13,
+      "mean_eur_mwh": 95.18,
+      "min_eur_mwh": -500.0,
+      "n_hours": 8760,
+      "negative_hours": 301,
+      "negative_hours_pct": 3.44,
+      "start": "2022-12-31T23:00:00+00:00",
+      "std_eur_mwh": 47.58
+    }
+  },
+  "dispatch": {
+    "fixed_schedule": {
+      "capture_rate": 0.3945,
+      "cycles_per_day": 0.927,
+      "degradation_cost_eur": 81459.46,
+      "energy_charged_mwh": 31530.3,
+      "energy_discharged_mwh": 27153.15,
+      "equivalent_full_cycles": 339.41,
+      "gross_revenue_eur": 1096666.59,
+      "hours": 8784,
+      "net_revenue_eur": 1015207.12,
+      "solve_seconds": 0.0,
+      "status": "Heuristic"
+    },
+    "milp_gradient_boosting": {
+      "capture_rate": 0.8571,
+      "cycles_per_day": 1.497,
+      "degradation_cost_eur": 131502.77,
+      "energy_charged_mwh": 50926.93,
+      "energy_discharged_mwh": 43834.26,
+      "equivalent_full_cycles": 547.93,
+      "gross_revenue_eur": 2337362.91,
+      "hours": 8784,
+      "net_revenue_eur": 2205860.14,
+      "solve_seconds": 38.94,
+      "status": "RollingHorizon"
+    },
+    "milp_seasonal_naive_168h": {
+      "capture_rate": 0.8372,
+      "cycles_per_day": 1.424,
+      "degradation_cost_eur": 125063.2,
+      "energy_charged_mwh": 48430.98,
+      "energy_discharged_mwh": 41687.73,
+      "equivalent_full_cycles": 521.1,
+      "gross_revenue_eur": 2279660.06,
+      "hours": 8784,
+      "net_revenue_eur": 2154596.86,
+      "solve_seconds": 39.1,
+      "status": "RollingHorizon"
+    },
+    "perfect_foresight": {
+      "capture_rate": 1.0,
+      "cycles_per_day": 1.449,
+      "degradation_cost_eur": 127322.72,
+      "energy_charged_mwh": 49306.76,
+      "energy_discharged_mwh": 42440.91,
+      "equivalent_full_cycles": 530.51,
+      "gross_revenue_eur": 2700981.36,
+      "hours": 8784,
+      "net_revenue_eur": 2573658.64,
+      "solve_seconds": 4.2,
+      "status": "Optimal"
+    },
+    "threshold": {
+      "capture_rate": 0.3699,
+      "cycles_per_day": 0.672,
+      "degradation_cost_eur": 58989.45,
+      "energy_charged_mwh": 22907.26,
+      "energy_discharged_mwh": 19663.15,
+      "equivalent_full_cycles": 245.79,
+      "gross_revenue_eur": 1010988.44,
+      "high_quantile": 0.65,
+      "hours": 8784,
+      "low_quantile": 0.35,
+      "net_revenue_eur": 951998.99,
+      "solve_seconds": 0.0,
+      "status": "Heuristic"
+    }
+  },
+  "forecast_metrics": [
+    {
+      "bias_eur_mwh": -0.642,
+      "mae_eur_mwh": 32.313,
+      "n_hours": 8784,
+      "name": "seasonal_naive_168h",
+      "rmse_eur_mwh": 54.782
+    },
+    {
+      "bias_eur_mwh": -1.916,
+      "mae_eur_mwh": 28.36,
+      "n_hours": 8784,
+      "name": "gradient_boosting",
+      "rmse_eur_mwh": 43.938
+    }
+  ]
+}

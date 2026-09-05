@@ -46,9 +46,12 @@ optimization:
   enforce_complementarity: true
 
 forecast:
-  # Lag features in hours. 24 and 168 capture daily and weekly seasonality,
-  # which dominate electricity prices.
-  lags: [24, 25, 26, 48, 168, 169]
+  # Lag features in hours. Every lag must be >= 48, because the planner
+  # decides up to 48 hours ahead and cannot use a price it has not seen yet.
+  # The obvious feature -- yesterday's price at the same hour, lag 24 -- is
+  # therefore unavailable, and using it would inflate revenue with money that
+  # could never have been earned. src/battery/forecast.py enforces this.
+  lags: [48, 49, 50, 72, 96, 168, 169, 336]
   rolling_windows: [24, 168]
   gbm:
     n_estimators: 400
