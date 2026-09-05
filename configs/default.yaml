@@ -60,7 +60,7 @@ forecast:
     subsample: 0.8
 
 monte_carlo:
-  n_simulations: 500
+  n_simulations: 300
   # Forecast errors are resampled in day-long blocks rather than hour by hour.
   # Hourly errors are strongly autocorrelated; independent resampling would
   # cancel them out and produce a fictitiously narrow confidence interval.

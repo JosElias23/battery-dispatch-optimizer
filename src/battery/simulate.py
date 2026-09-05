@@ -132,6 +132,33 @@ def block_bootstrap_errors(
     return sampled[:n_hours]
 
 
+def _simulate_one(task: tuple) -> float:
+    """One Monte Carlo draw. Module-level so it can be sent to a worker process."""
+    (
+        draw_seed,
+        actuals,
+        forecast_errors,
+        spec,
+        block_hours,
+        horizon_hours,
+        commit_hours,
+        solver_name,
+    ) = task
+
+    rng = np.random.default_rng(draw_seed)
+    noise = block_bootstrap_errors(forecast_errors, len(actuals), block_hours, rng)
+
+    result = rolling_horizon_dispatch(
+        actuals + noise,  # the forecast this alternative year would have had
+        actuals,  # revenue is always booked at the realised price
+        spec,
+        horizon_hours=horizon_hours,
+        commit_hours=commit_hours,
+        solver_name=solver_name,
+    )
+    return result.net_revenue_eur(spec)
+
+
 def monte_carlo_revenue(
     actual_prices: Sequence[float],
     forecast_errors: np.ndarray,
@@ -143,6 +170,7 @@ def monte_carlo_revenue(
     seed: int = 42,
     solver_name: str = "HiGHS",
     progress_every: int = 25,
+    n_workers: int | None = None,
 ) -> dict:
     """Distribution of annual revenue under resampled forecast error.
 
@@ -151,27 +179,35 @@ def monte_carlo_revenue(
     against it, and books revenue at the realised prices. The spread of the
     result answers the question a risk committee actually asks: not "what did
     this earn" but "what range could it have earned".
+
+    One simulated year is 366 sequential MILP solves and takes about 40
+    seconds, so the draws are spread across processes. Each draw is seeded from
+    a distinct child of the master seed, which keeps the whole run reproducible
+    regardless of how many workers happen to be available or what order they
+    finish in.
     """
-    rng = np.random.default_rng(seed)
     actuals = np.asarray(actual_prices, dtype=float)
+    seeds = np.random.SeedSequence(seed).spawn(n_simulations)
+    tasks = [
+        (s, actuals, forecast_errors, spec, block_hours, horizon_hours,
+         commit_hours, solver_name)
+        for s in seeds
+    ]
+
     revenues: list[float] = []
+    if n_workers == 1:
+        for i, task in enumerate(tasks):
+            revenues.append(_simulate_one(task))
+            if progress_every and (i + 1) % progress_every == 0:
+                print(f"[monte carlo] {i + 1}/{n_simulations}")
+    else:
+        from concurrent.futures import ProcessPoolExecutor
 
-    for i in range(n_simulations):
-        noise = block_bootstrap_errors(forecast_errors, len(actuals), block_hours, rng)
-        synthetic_forecast = actuals + noise
-
-        result = rolling_horizon_dispatch(
-            synthetic_forecast,
-            actuals,
-            spec,
-            horizon_hours=horizon_hours,
-            commit_hours=commit_hours,
-            solver_name=solver_name,
-        )
-        revenues.append(result.net_revenue_eur(spec))
-
-        if progress_every and (i + 1) % progress_every == 0:
-            print(f"[monte carlo] {i + 1}/{n_simulations} simulations")
+        with ProcessPoolExecutor(max_workers=n_workers) as pool:
+            for i, revenue in enumerate(pool.map(_simulate_one, tasks)):
+                revenues.append(revenue)
+                if progress_every and (i + 1) % progress_every == 0:
+                    print(f"[monte carlo] {i + 1}/{n_simulations}", flush=True)
 
     values = np.asarray(revenues)
     return {
