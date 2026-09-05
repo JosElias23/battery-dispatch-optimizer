@@ -1,0 +1,20 @@
+{
+  "bootstrapped_forecast": {
+    "mae_eur_mwh": 28.225,
+    "mean_daily_rank_correlation": 0.7266,
+    "n_draws": 20,
+    "rank_correlation_sd": 0.0119
+  },
+  "conclusion": "Bootstrapped forecasts carry the same error magnitude as the real one but rank hours within the day less faithfully. Dispatch value depends on that ranking, so the Monte Carlo understates achievable revenue by construction and should be read as a conservative bound.",
+  "error_vs_local_volatility": {
+    "correlation": 0.3546,
+    "mean_abs_error_calm_quartile": 27.63,
+    "mean_abs_error_volatile_quartile": 34.18,
+    "ratio": 1.237
+  },
+  "rank_fidelity_lost": 0.049,
+  "real_forecast": {
+    "mae_eur_mwh": 28.36,
+    "mean_daily_rank_correlation": 0.7757
+  }
+}

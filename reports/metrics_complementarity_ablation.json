@@ -1,6 +1,6 @@
 {
   "constrained_net_revenue_eur": 2573658.64,
-  "constrained_solve_seconds": 10.21,
+  "constrained_solve_seconds": 4.43,
   "example_hours": [
     {
       "charge_mw": 25.0,
@@ -68,7 +68,7 @@
   "negative_price_hours_in_year": 457,
   "physical_violations_in_relaxed_schedule": 28,
   "relaxed_net_revenue_eur": 2574867.31,
-  "relaxed_solve_seconds": 7.85,
+  "relaxed_solve_seconds": 2.8,
   "simultaneous_hours": 28,
   "simultaneous_hours_at_negative_prices": 28
 }

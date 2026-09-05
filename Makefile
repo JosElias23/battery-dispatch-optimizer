@@ -11,6 +11,7 @@ help:
 	@echo "experiment  fit forecasters on 2023, dispatch 2024, write metrics"
 	@echo "ablation    quantify the revenue invented by relaxing complementarity"
 	@echo "montecarlo  revenue distribution under resampled forecast error"
+	@echo "erroranalysis  why the Monte Carlo is a conservative bound"
 	@echo "figures     regenerate every figure in the README"
 	@echo "all         test -> experiment -> ablation -> montecarlo -> figures"
 
@@ -26,13 +27,16 @@ experiment:
 ablation:
 	$(PYTHON) scripts/ablate_complementarity.py
 
+erroranalysis:
+	$(PYTHON) scripts/analyse_forecast_error.py
+
 montecarlo:
 	$(PYTHON) scripts/run_monte_carlo.py
 
 figures:
 	$(PYTHON) scripts/make_figures.py
 
-all: test experiment ablation montecarlo figures
+all: test experiment ablation montecarlo erroranalysis figures
 
 clean:
 	rm -rf .pytest_cache .ruff_cache
