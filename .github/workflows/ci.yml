@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      # No network needed: the physics and MILP tests run on synthetic prices.
+      - name: Test
+        run: pytest -q
+
+  # A solver upgrade that silently changed the optimum would invalidate every
+  # capture rate in the README. This recomputes a known case and checks the
+  # physics independently of whatever the solver claims.
+  verify-optimiser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Solve a hand-computable case and re-verify the physics
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "src")
+          from battery.model import BatterySpec, check_feasibility
+          from battery.optimize import solve_dispatch
+
+          lossless = BatterySpec(
+              energy_capacity_mwh=100.0, power_mw=25.0, round_trip_efficiency=1.0,
+              soc_min_fraction=0.0, soc_max_fraction=1.0,
+              initial_soc_fraction=0.0, degradation_cost_eur_per_mwh=0.0,
+          )
+          result = solve_dispatch([0.0, 0.0, 100.0, 100.0], lossless)
+          assert abs(result.gross_revenue_eur - 5000.0) < 1e-2, result.gross_revenue_eur
+          assert check_feasibility(result, lossless) == []
+
+          # The complementarity constraint must still bind at negative prices.
+          spec = BatterySpec(
+              energy_capacity_mwh=100.0, power_mw=25.0, round_trip_efficiency=0.86,
+              soc_min_fraction=0.1, soc_max_fraction=0.9,
+              initial_soc_fraction=0.5, degradation_cost_eur_per_mwh=3.0,
+          )
+          prices = [-100.0] * 12 + [50.0] * 12
+          strict = solve_dispatch(prices, spec, enforce_complementarity=True)
+          relaxed = solve_dispatch(prices, spec, enforce_complementarity=False)
+          assert relaxed.net_revenue_eur(spec) > strict.net_revenue_eur(spec)
+          assert check_feasibility(strict, spec) == []
+          print("Optimiser reproduces the documented behaviour.")
+          PY
