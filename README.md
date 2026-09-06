@@ -10,7 +10,7 @@ capture without knowing tomorrow's prices?
 
 A 100 MWh / 25 MW storage asset is dispatched against German day-ahead prices
 for all of 2024 using mixed-integer optimisation over forecast prices, and
-scored against the perfect-foresight upper bound — the most any operator could
+scored against the perfect-foresight upper bound, the most any operator could
 possibly have earned.
 
 ---
@@ -31,7 +31,7 @@ Net revenue over 2024 (8,784 hours), after round-trip losses and degradation.
 
 **The headline: optimisation against a forecast captures 85.7 % of what a
 clairvoyant operator could have earned, and earns € 1.19 M more than a fixed
-schedule — 2.17× the revenue, from the same physical asset.**
+schedule, 2.17× the revenue, from the same physical asset.**
 
 The capture rate, not the euro figure, is the number worth quoting. Absolute
 revenue depends entirely on how volatile the year happened to be; the fraction
@@ -60,11 +60,11 @@ selling into the spikes, and clears € 110,769 in seven days.
 | Seasonal naive (same hour, last week) | 32.31 | 54.78 | € 2,154,597 | 83.7 % |
 | Gradient boosting | **28.36** | **43.94** | **€ 2,205,860** | **85.7 %** |
 
-A 12 % reduction in MAE buys 2.0 percentage points of capture rate — real, but
+A 12 % reduction in MAE buys 2.0 percentage points of capture rate, real, but
 far from proportional. Dispatch does not need accurate prices; it needs the
 *ordering* of cheap and expensive hours. Getting the level of a flat afternoon
-wrong costs nothing. Getting the position of the evening peak wrong costs a
-full cycle.
+wrong costs nothing. Getting the position of the evening peak wrong costs a full
+cycle.
 
 The intermediate result makes the point sharper. An earlier version of the
 booster had a *worse* MAE than the naive baseline (25.97 vs 24.77 on a two-month
@@ -74,10 +74,10 @@ Revenue is the objective.** Both are reported here; they disagree.
 
 ### 2. Training on price *levels* broke the model, and centring fixed it
 
-The first gradient booster was trained to predict the price directly. It
-learned 2023, where prices averaged 95.18 €/MWh. It was evaluated on 2024,
-which cleared at 78.51 €/MWh — 17 €/MWh lower. Every notion of "cheap" it had
-learned sat in the wrong place, and it lost to a naive weekly lag.
+The first gradient booster was trained to predict the price directly. It learned
+2023, where prices averaged 95.18 €/MWh. It was evaluated on 2024, which cleared
+at 78.51 €/MWh, 17 €/MWh lower. Every notion of "cheap" it had learned sat in
+the wrong place, and it lost to a naive weekly lag.
 
 The fix was to predict the *deviation from a trailing 168-hour price level*
 rather than the level itself, with the lagged features centred on the same
@@ -85,16 +85,16 @@ anchor. The daily and weekly **shape** of electricity prices is stable across
 years; the absolute level is not, and the level is what moved.
 
 This is a distribution shift a train/test split on a single year would never
-have exposed. It is only visible because the split is across years, which is
-the only split that reflects how the model would actually be deployed.
+have exposed. It is only visible because the split is across years, which is the
+only split that reflects how the model would actually be deployed.
 
-### 3. The constraint everyone calls redundant is not — but it is cheap, not lucrative
+### 3. The constraint everyone calls redundant is not, but it is cheap, not lucrative
 
 Textbook formulations often drop the binary forbidding simultaneous charge and
 discharge, arguing that doing both at once is never optimal, so the linear
 relaxation is exact and much faster.
 
-That argument assumes positive prices. 457 hours of 2024 — 5.2 % of the year —
+That argument assumes positive prices. 457 hours of 2024, 5.2 % of the year,
 cleared **below zero**, and there the operator is *paid* to consume. The relaxed
 model then discovers it can hold the state of charge flat while maintaining a
 net import:
@@ -114,12 +114,12 @@ without ever filling the battery. Running `scripts/ablate_complementarity.py`:
 | ...of which at negative prices | — | **28 (100 %)** |
 | Physically impossible hours | 0 | 28 |
 
-The most extreme case charges at 25 MW while discharging 11.8 MW at
-−85.08 €/MWh.
+The most extreme case charges at 25 MW while discharging 11.8 MW at −85.08
+€/MWh.
 
-**The honest conclusion is about correctness, not money.** Every single one of
-the 28 impossible hours occurs at a negative price, exactly as the mechanism
-predicts — but the invented revenue is € 1,209, or **0.05 %**. The relaxation
+The honest conclusion is about correctness, not money. Every single one of the
+28 impossible hours occurs at a negative price, exactly as the mechanism
+predicts. But the invented revenue is € 1,209, or **0.05 %**. The relaxation
 produces a physically impossible schedule and is barely richer for it.
 
 Nor is the relaxation the dramatic speed-up the textbook argument implies:
@@ -132,10 +132,10 @@ schedule an asset could execute and one it could not.
 ### 4. Reaching the last 14 % is a forecasting problem, not an optimisation one
 
 The MILP is optimal for the prices it is given. The 14.3 % gap to perfect
-foresight is entirely attributable to forecast error — every euro of it. No
-improvement to the solver, the formulation or the horizon can recover any of
-it. That is a useful thing to know before investing engineering effort, and it
-is only visible because the upper bound was computed.
+foresight is entirely attributable to forecast error, every euro of it. No
+improvement to the solver, the formulation or the horizon can recover any of it.
+That is a useful thing to know before investing engineering effort, and it is
+only visible because the upper bound was computed.
 
 ### 5. Revenue is remarkably insensitive to *when* forecast errors land
 
@@ -152,15 +152,14 @@ in day-long blocks and re-running the full rolling-horizon dispatch:
 | **Relative spread (1 sd)** | **1.24 % of mean** |
 
 A ±1.24 % band is narrow. Given a forecaster of this quality, the *timing* of
-its mistakes barely matters: bad luck in when errors fall costs about
-€ 25,000 on € 2 M. For an asset owner, that is the difference between a
-revenue model worth underwriting and one that is not.
+its mistakes barely matters: bad luck in when errors fall costs about € 25,000
+on € 2 M. For an asset owner, that is the difference between a revenue model
+worth underwriting and one that is not.
 
 **The realised run beat the simulation, and that needs explaining rather than
-celebrating.** The actual gradient-boosting dispatch earned € 2,205,860 —
-above the 95 % interval. Either it was lucky, or the simulation is pessimistic
-by construction. `scripts/analyse_forecast_error.py` tests the second
-hypothesis:
+celebrating.** The actual gradient-boosting dispatch earned € 2,205,860, above
+the 95 % interval. Either it was lucky, or the simulation is pessimistic by
+construction. `scripts/analyse_forecast_error.py` tests the second hypothesis:
 
 | Forecast | MAE (€/MWh) | Mean within-day rank correlation |
 |---|---:|---:|
@@ -169,7 +168,7 @@ hypothesis:
 
 Same error magnitude, materially worse ranking. Block resampling preserves how
 *big* the errors are and how they cluster in time, but detaches them from the
-prices they were made against — an error block from a volatile December week
+prices they were made against. An error block from a volatile December week
 pasted onto a calm July day is a forecast no model would ever have produced.
 
 And dispatch value lives entirely in the ranking, not the level: a forecast
@@ -183,7 +182,7 @@ and error magnitude is a decoy.*
 
 One honest complication surfaced along the way. The forecaster is **worse**
 exactly where the money is: mean absolute error is 27.63 €/MWh in the calmest
-quartile of hours against 34.18 €/MWh in the most volatile — 1.24× higher,
+quartile of hours against 34.18 €/MWh in the most volatile, 1.24× higher,
 correlation 0.36 with local volatility. Volatile hours are where the spreads
 are. Improving the forecast specifically in those hours is the single most
 promising route to closing the remaining 14 % gap.
@@ -192,15 +191,15 @@ promising route to closing the remaining 14 % gap.
 
 ## The problem
 
-A battery earns money by buying electricity when it is cheap and selling it
-when it is expensive. Three things make that harder than it sounds:
+A battery earns money by buying electricity when it is cheap and selling it when
+it is expensive. Three things make that harder than it sounds:
 
 - **Round-trip losses.** At 86 % efficiency, delivering 1 MWh to the grid
   requires drawing 1.163 MWh from it. Buying at 100 €/MWh means the sell price
-  must clear 119.28 €/MWh — including degradation — just to break even.
+  must clear 119.28 €/MWh, including degradation, just to break even.
 - **Degradation.** Cycling wears the cells. Without a cost on throughput the
-  optimiser trades every small wiggle, which is profitable on paper and
-  destroys the asset in reality.
+  optimiser trades every small wiggle, which is profitable on paper and destroys
+  the asset in reality.
 - **Uncertainty.** Tomorrow's prices are not known when today's plan is made.
 
 The physical model, the sign conventions and the economics are in
@@ -253,14 +252,14 @@ subject to s[t] = s[t-1] + eta_c * c[t] * dt - d[t] * dt / eta_d   (energy balan
 ```
 
 Solved with HiGHS through PuLP, falling back to the bundled CBC so the
-repository runs with no extra system dependencies. The full year solves in
-about 5 seconds.
+repository runs with no extra system dependencies. The full year solves in about
+5 seconds.
 
 ### Rolling horizon
 
-A real operator does not solve the year in one shot. Each day the model plans
-48 hours ahead on forecast prices and **commits only the first 24**, then
-re-plans tomorrow.
+A real operator does not solve the year in one shot. Each day the model plans 48
+hours ahead on forecast prices and **commits only the first 24**, then re-plans
+tomorrow.
 
 Committing less than the planning horizon is what stops the schedule collapsing
 at the window edge: energy left in the battery at the end of a window is worth
@@ -276,7 +275,7 @@ measures nothing but the optimiser's arithmetic.
 
 The furthest hour being decided is 48 hours away, so **no feature may reference
 anything within 48 hours of its target**. This rules out the single strongest
-predictor available — yesterday's price at the same hour — and
+predictor available, yesterday's price at the same hour, and
 `src/battery/forecast.py` raises on any lag shorter than 48.
 
 That guard immediately caught a lag of 24 left in the config from an early
@@ -284,17 +283,17 @@ draft. It would have produced a better forecast, a better capture rate, and
 revenue that could never have been earned.
 
 `tests/test_forecast.py` goes further: it overwrites the second half of the
-price series with garbage and asserts that every prediction in the first half
-is bit-for-bit unchanged. Any feature reaching forward in time fails it.
+price series with garbage and asserts that every prediction in the first half is
+bit-for-bit unchanged. Any feature reaching forward in time fails it.
 
 ### Verifying the solver
 
-`check_feasibility` re-derives the state of charge from a schedule and
-re-checks every physical limit, independently of the solver. A solver reporting
-`Optimal` means only that it satisfied the constraints it was handed; if those
-were written incorrectly the answer is optimal for the wrong problem, and the
-mistake surfaces as revenue rather than as an error. Every dispatch in the
-results table passes this check before its revenue is recorded.
+`check_feasibility` re-derives the state of charge from a schedule and re-checks
+every physical limit, independently of the solver. A solver reporting `Optimal`
+means only that it satisfied the constraints it was handed; if those were
+written incorrectly the answer is optimal for the wrong problem, and the mistake
+surfaces as revenue rather than as an error. Every dispatch in the results table
+passes this check before its revenue is recorded.
 
 ---
 
@@ -328,8 +327,8 @@ python scripts/analyse_forecast_error.py
 python scripts/make_figures.py
 ```
 
-The Monte Carlo is the expensive step: one simulated year is 366 sequential
-MILP solves, so 300 draws take roughly an hour spread across 12 processes.
+The Monte Carlo is the expensive step: one simulated year is 366 sequential MILP
+solves, so 300 draws take roughly an hour spread across 12 processes.
 
 ```bash
 python scripts/run_monte_carlo.py --workers 12
@@ -371,18 +370,18 @@ market the auction clears around 12:45 on D−1 and publishes all 24 prices for
 day D, so an operator planning *within* the delivery day genuinely does have
 near-perfect foresight. The forecasting problem modelled here is the one faced
 when **bidding into** the auction before it clears, and the 48-hour blackout is
-a deliberately conservative version of it — a desk bidding at noon on D−1 faces
-a 12-to-36-hour horizon, not 48. A shorter blackout would raise every capture
-rate reported above. The relative ranking of the policies would not change.
+a deliberately conservative version of it. A desk bidding at noon on D−1 faces a
+12-to-36-hour horizon, not 48. A shorter blackout would raise every capture rate
+reported above. The relative ranking of the policies would not change.
 
 **One year, one market, one battery configuration.** All results are 2024
-Germany with a 4-hour battery. Capture rates depend on the volatility of the
+**Germany with a 4-hour battery.** Capture rates depend on the volatility of the
 year, the duration of the asset, and the market's structure. Nothing here has
 been tested on Chilean data.
 
 **Revenue is arbitrage only.** Real storage assets earn a large share of their
-income from frequency response and capacity markets, which are not modelled.
-The figures are a lower bound on total asset value and should not be read as a
+income from frequency response and capacity markets, which are not modelled. The
+figures are a lower bound on total asset value and should not be read as a
 business case.
 
 **Degradation is linear in throughput.** Actual cell ageing depends on depth of
@@ -390,23 +389,23 @@ discharge, temperature, C-rate and calendar time. A linear cost per MWh is the
 standard tractable approximation and keeps the problem an LP-representable MILP,
 but it will misprice deep cycles.
 
-**The battery starts half full.** That 50 MWh endowment can be sold without
-ever having been bought. Over a year it is worth roughly 0.1 % of revenue and
-it applies to every policy alike, so comparisons are unaffected, but the
-absolute figures are very slightly flattered.
+**The battery starts half full.** That 50 MWh endowment can be sold without ever
+having been bought. Over a year it is worth roughly 0.1 % of revenue and it
+applies to every policy alike, so comparisons are unaffected, but the absolute
+figures are very slightly flattered.
 
 **Perfect foresight is solved in fortnight chunks**, chained through the state
 of charge, rather than as one 8,784-hour MILP. This can only *understate* the
-true optimum — it forbids arbitrage across chunk boundaries — so the reported
+true optimum, it forbids arbitrage across chunk boundaries, so the reported
 capture rates are, if anything, slightly generous.
 
 **No hyperparameter search.** The booster uses standard values applied without
 tuning. Fair as a comparison, almost certainly not optimal.
 
-**The Monte Carlo models error timing, not error size.** It resamples the
-errors the fitted model actually made, so it answers "what if these mistakes
-had fallen elsewhere in the year", not "what if the forecaster were worse".
-A forecaster-quality sensitivity — scaling error magnitude up and down — would
+**The Monte Carlo models error timing, not error size.** It resamples the errors
+the fitted model actually made, so it answers "what if these mistakes had fallen
+elsewhere in the year", not "what if the forecaster were worse". A
+forecaster-quality sensitivity, scaling error magnitude up and down, would
 answer the second question and is not done here.
 
 ### Planned
@@ -421,5 +420,5 @@ answer the second question and is not done here.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Price data is Bundesnetzagentur/SMARD via
+**MIT, see [LICENSE](LICENSE).** Price data is Bundesnetzagentur/SMARD via
 Fraunhofer ISE energy-charts, licensed CC BY 4.0.
