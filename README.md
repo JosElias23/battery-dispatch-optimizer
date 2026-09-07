@@ -187,6 +187,9 @@ correlation 0.36 with local volatility. Volatile hours are where the spreads
 are. Improving the forecast specifically in those hours is the single most
 promising route to closing the remaining 14 % gap.
 
+Why each of these decisions was made, and what the alternatives cost, is
+written up in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
 ---
 
 ## The problem
