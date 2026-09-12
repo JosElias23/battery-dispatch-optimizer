@@ -17,8 +17,12 @@ unfalsifiable: it depends entirely on how volatile the year happened to be. "The
 battery captured 85.7% of the perfect-foresight optimum" is a claim about the
 *method*, and it is comparable across markets and years.
 
-That framing forces a decision most dispatch projects skip: the upper bound has
-to be computed, not assumed. Without it there is no denominator.
+That framing forces a decision most dispatch projects skip: the benchmark has to
+be computed, not assumed. Without it there is no denominator.
+
+One word in that sentence used to be "upper bound", and section 5.4 explains why
+it no longer is. The benchmark is solved in fortnight chunks, and a rolling
+48-hour policy handed the realised prices beats it by EUR 855.
 
 ---
 
@@ -235,12 +239,56 @@ than the one the numbers actually support.
 
 ### 5.4 The remaining 14% is a forecasting problem, not an optimisation one
 
-The MILP is optimal for the prices it is given. The 14.3% gap to perfect
-foresight is therefore attributable to forecast error, every euro of it. No
-improvement to the solver, the formulation or the horizon can recover any of it.
+The MILP is optimal for the prices it is given, so the 14.3% gap should be
+forecast error. An earlier version of this section said it *was* -- "every euro
+of it", and "no improvement to the solver, the formulation or the horizon can
+recover any of it".
 
-That is a useful thing to know *before* spending effort on the solver, and it is
-only knowable because the upper bound was computed.
+**That was an argument, not a measurement, and it subtracted two arms that
+differ in two ways.** The benchmark optimises with true prices *and* plans over
+the whole year in fortnight chunks. The deployed policy optimises with a
+forecast *and* plans 48 hours ahead, committing 24. A full-year optimiser can
+carry energy across a quiet week into a volatile one; a 48-hour window cannot
+see that far, and the state of charge it hands to the next window is chosen
+without knowing what follows. That is a cost of the horizon and it is present
+even with perfect prices -- or it would be, if the horizon were short relative
+to the asset.
+
+`scripts/decompose_gap.py` adds the missing arm: the same rolling horizon, the
+same window and commitment, driven by the realised prices.
+
+| Arm | Net revenue | Gap to benchmark |
+|---|---:|---:|
+| A  perfect foresight, fortnight chunks | EUR 2,573,659 | - |
+| B  rolling 48 h, true prices | EUR 2,574,513 | **-EUR 855** |
+| C  rolling 48 h, GB forecast | EUR 2,205,860 | EUR 367,799 |
+
+**The claim holds and is now measured: -0.2% of the gap is the horizon and
+100.2% is forecast error.** The reason is in the asset rather than the solver. A
+100 MWh / 25 MW battery has a four-hour duration, so it fills and empties inside
+a day and never needs to move energy across a week. A 48-hour horizon is already
+twice the cycle length, and doubling it again would buy nothing.
+
+Worth being explicit about how weak my prior was here: I expected the horizon to
+carry a visible share of the gap and wrote the script to find out. It carries
+none. The write-up was right for a reason it had not stated, which is a
+different thing from being right, and the distance between those two is exactly
+what this file is for.
+
+#### The benchmark is not an upper bound
+
+Arm B **beats** arm A by EUR 855, and a bound a real policy exceeds is not a
+bound. `perfect_foresight_dispatch` solves the year in fortnight chunks, each
+starting from the previous chunk's final state of charge; a 48-hour window that
+slides sees across the seams the chunks cannot. Its own docstring contained both
+halves of the contradiction -- "no real policy can beat this" one paragraph
+above "it can only ever *understate* the optimum" -- and the second is the true
+one.
+
+The margin is 0.03% and moves no conclusion in this repository. It changes what
+a capture rate is a fraction *of*: a chunked perfect-foresight benchmark, not
+the most an operator could possibly have earned. `tests/test_optimize.py` now
+pins the direction of that approximation rather than leaving it to a comment.
 
 ### 5.5 Revenue is insensitive to when forecast errors land
 

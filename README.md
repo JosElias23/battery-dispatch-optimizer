@@ -1,7 +1,7 @@
 # Battery dispatch optimisation on real electricity prices
 
 [![CI](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-66%20passing-brightgreen)](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-69%20passing-brightgreen)](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml)
 [![python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)](pyproject.toml)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -12,8 +12,8 @@ capture without knowing tomorrow's prices?
 
 A 100 MWh / 25 MW storage asset is dispatched against German day-ahead prices
 for all of 2024 using mixed-integer optimisation over forecast prices, and
-scored against the perfect-foresight upper bound, the most any operator could
-possibly have earned.
+scored against a perfect-foresight benchmark: what the same optimiser earns
+when handed the realised prices.
 
 ---
 
@@ -133,11 +133,35 @@ schedule an asset could execute and one it could not.
 
 ### 4. Reaching the last 14 % is a forecasting problem, not an optimisation one
 
-The MILP is optimal for the prices it is given. The 14.3 % gap to perfect
-foresight is entirely attributable to forecast error, every euro of it. No
-improvement to the solver, the formulation or the horizon can recover any of it.
-That is a useful thing to know before investing engineering effort, and it is
-only visible because the upper bound was computed.
+The MILP is optimal for the prices it is given, so the 14.3 % gap should be
+forecast error. An earlier version of this README asserted that it was — "every
+euro of it", and that "no improvement to the solver, the formulation or the
+horizon can recover any of it". That was an argument, not a measurement, and it
+compared two arms that differ in **two** ways: the benchmark optimises with true
+prices, and it also plans over the whole year rather than a rolling 48 hours.
+
+`scripts/decompose_gap.py` adds the arm that separates them — the same rolling
+horizon, the same 48-hour window and 24-hour commitment, handed the realised
+prices:
+
+| Arm | Net revenue | Gap to benchmark |
+|---|---:|---:|
+| Perfect foresight, fortnight chunks | € 2,573,659 | — |
+| **Rolling 48 h, true prices** | **€ 2,574,513** | **−€ 855** |
+| Rolling 48 h, GB forecast | € 2,205,860 | € 367,799 |
+
+**The horizon costs nothing: −0.2 % of the gap, with 100.2 % of it forecast
+error.** The claim holds, and it is now measured. The reason is in the asset
+rather than the solver — a 100 MWh / 25 MW battery has a four-hour duration, so
+it fills and empties inside a day and never needs to carry energy across a week.
+A horizon twice the cycle length is already long enough.
+
+One thing fell out of it. The rolling arm **beats** the benchmark by € 855, so
+the benchmark is not an upper bound. `perfect_foresight_dispatch` solves the year
+in fortnight chunks, and a 48-hour window sees across the seams that the chunks
+cannot. The margin is 0.03 % and moves no conclusion, but it changes what a
+capture rate is a fraction *of*: a chunked perfect-foresight benchmark, not the
+most an operator could possibly have earned.
 
 ### 5. Revenue is remarkably insensitive to *when* forecast errors land
 
@@ -329,6 +353,7 @@ minute.
 ```bash
 python scripts/ablate_complementarity.py
 python scripts/analyse_forecast_error.py
+python scripts/decompose_gap.py
 python scripts/make_figures.py
 ```
 
@@ -361,8 +386,9 @@ battery-dispatch-optimizer/
 │   ├── run_monte_carlo.py        revenue distribution under forecast error
 │   ├── ablate_complementarity.py the money-pump ablation
 │   ├── analyse_forecast_error.py why the Monte Carlo is a conservative bound
+│   ├── decompose_gap.py          horizon cost vs forecast error in the gap
 │   └── make_figures.py           every figure in this README
-├── tests/                        66 tests
+├── tests/                        69 tests
 └── reports/                      metrics as JSON, figures as PNG
 ```
 

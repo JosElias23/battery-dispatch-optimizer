@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from battery.model import BatterySpec, check_feasibility
-from battery.optimize import solve_dispatch
+from battery.optimize import perfect_foresight_dispatch, solve_dispatch
 from battery.policies import FixedSchedulePolicy, ThresholdPolicy, apply_schedule
 
 
@@ -257,3 +257,63 @@ class TestPolicies:
         altered = policy.plan(tampered, hours, spec)
 
         assert baseline[:150] == altered[:150]
+
+
+class TestThePerfectForesightBenchmarkIsNotAnUpperBound:
+    """What `perfect_foresight_dispatch` computes, and what it does not.
+
+    Its docstring used to say "no real policy can beat this" one paragraph
+    above saying the fortnight chunking "can only ever understate the optimum".
+    Both cannot hold. `scripts/decompose_gap.py` found the policy that settles
+    it -- a rolling 48-hour horizon on realised prices earns EUR 2,574,513
+    against the benchmark's EUR 2,573,659 over 2024, because a sliding window
+    sees across seams that fixed chunks cannot.
+
+    The margin is 0.03% and changes no conclusion. It changes a word: capture
+    rates here are fractions of a chunked benchmark, not of the maximum
+    attainable. These tests keep that property from drifting back into a
+    stronger claim.
+    """
+
+    def test_chunking_can_only_lose_revenue(self, spec):
+        """The approximation has a direction, and this is it.
+
+        One series, solved whole and solved in chunks. The chunked answer can
+        never be the larger one, because every schedule it can produce is also
+        available to the unchunked problem.
+        """
+        rng = np.random.default_rng(7)
+        prices = list(rng.normal(60, 40, size=96))
+
+        whole = solve_dispatch(prices, spec)
+        chunked = perfect_foresight_dispatch(prices, spec, chunk_hours=24)
+
+        assert chunked.net_revenue_eur(spec) <= whole.net_revenue_eur(spec) + 1e-6
+
+    def test_a_finer_chunk_is_never_worth_more_than_a_coarser_one(self, spec):
+        """More seams cannot help, so the benchmark is monotone in chunk size."""
+        rng = np.random.default_rng(11)
+        prices = list(rng.normal(60, 40, size=96))
+
+        coarse = perfect_foresight_dispatch(prices, spec, chunk_hours=48)
+        fine = perfect_foresight_dispatch(prices, spec, chunk_hours=12)
+
+        assert fine.net_revenue_eur(spec) <= coarse.net_revenue_eur(spec) + 1e-6
+
+    def test_the_benchmark_is_chunked_at_all(self, spec):
+        """If it ever becomes a single solve, the caveat above stops applying.
+
+        A long enough series with a price pattern that rewards carrying energy
+        across a chunk boundary must score strictly below the unchunked answer.
+        Cheap for two weeks, expensive for two weeks: an unchunked optimiser
+        fills up in the first fortnight and sells in the second, and a chunked
+        one cannot.
+        """
+        prices = [10.0] * 48 + [500.0] * 48
+        whole = solve_dispatch(prices, spec)
+        chunked = perfect_foresight_dispatch(prices, spec, chunk_hours=48)
+
+        assert chunked.net_revenue_eur(spec) < whole.net_revenue_eur(spec), (
+            "the benchmark appears not to be chunked any more; "
+            "docs/DECISIONS.md section 5.4 assumes it is"
+        )

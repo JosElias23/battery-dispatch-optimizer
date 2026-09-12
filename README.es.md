@@ -1,7 +1,7 @@
 # Optimización del despacho de una batería con precios reales de electricidad
 
 [![CI](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-66%20passing-brightgreen)](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-69%20passing-brightgreen)](https://github.com/JosElias23/battery-dispatch-optimizer/actions/workflows/ci.yml)
 [![python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)](pyproject.toml)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -12,8 +12,8 @@ capturar realmente sin conocer los precios de mañana?
 
 Un activo de almacenamiento de 100 MWh / 25 MW se despacha contra los precios
 day-ahead alemanes de todo 2024 usando optimización entera mixta sobre precios
-pronosticados, y se puntúa contra la cota superior de previsión perfecta: lo
-máximo que cualquier operador podría haber ganado.
+pronosticados, y se puntúa contra una referencia de previsión perfecta: lo que
+gana el mismo optimizador cuando se le entregan los precios realizados.
 
 ---
 
@@ -136,11 +136,38 @@ programa que el activo podría ejecutar y uno que no.
 
 ### 4. Llegar al último 14 % es un problema de forecasting, no de optimización
 
-El MILP es óptimo para los precios que recibe. La brecha de 14,3 % contra la
-previsión perfecta es atribuible por completo al error de forecast, hasta el
-último euro. Ninguna mejora del solver, de la formulación o del horizonte puede
-recuperar nada de eso. Es algo útil de saber antes de invertir esfuerzo de
-ingeniería, y solo se ve porque se calculó la cota superior.
+El MILP es óptimo para los precios que recibe, así que la brecha de 14,3 %
+debería ser error de forecast. Una versión anterior de este README lo afirmaba
+—"hasta el último euro", y que "ninguna mejora del solver, de la formulación o
+del horizonte puede recuperar nada de eso"—. Eso era un argumento, no una
+medición, y comparaba dos brazos que difieren en **dos** cosas: la referencia
+optimiza con precios reales y además planifica sobre el año completo en vez de
+un horizonte rodante de 48 horas.
+
+`scripts/decompose_gap.py` agrega el brazo que los separa: el mismo horizonte
+rodante, la misma ventana de 48 horas y el mismo compromiso de 24, con los
+precios realizados.
+
+| Brazo | Ingreso neto | Brecha a la referencia |
+|---|---:|---:|
+| Previsión perfecta, trozos de catorce días | € 2.573.659 | — |
+| **Rodante 48 h, precios reales** | **€ 2.574.513** | **−€ 855** |
+| Rodante 48 h, pronóstico GB | € 2.205.860 | € 367.799 |
+
+**El horizonte no cuesta nada: −0,2 % de la brecha, con el 100,2 % restante en
+error de forecast.** La afirmación se sostiene, y ahora está medida. La razón
+está en el activo y no en el solver: una batería de 100 MWh / 25 MW tiene cuatro
+horas de duración, así que se llena y se vacía dentro del día y nunca necesita
+mover energía a través de una semana. Un horizonte del doble del ciclo ya es
+suficientemente largo.
+
+De ahí salió otra cosa. El brazo rodante **supera** a la referencia por € 855,
+así que la referencia no es una cota superior. `perfect_foresight_dispatch`
+resuelve el año en trozos de catorce días, y una ventana de 48 horas ve a través
+de las costuras que los trozos no pueden cruzar. El margen es 0,03 % y no mueve
+ninguna conclusión, pero cambia de qué es fracción una tasa de captura: de una
+referencia de previsión perfecta por trozos, no de lo máximo que un operador
+podría haber ganado.
 
 ### 5. El ingreso es notablemente insensible a *cuándo* caen los errores de forecast
 
@@ -329,7 +356,7 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-66 pruebas que cubren la física de la batería, la optimalidad del MILP contra
+69 pruebas que cubren la física de la batería, la optimalidad del MILP contra
 casos calculados a mano, y la fuga de información en el forecast.
 
 ```bash
@@ -343,6 +370,7 @@ Alrededor de un minuto.
 ```bash
 python scripts/ablate_complementarity.py
 python scripts/analyse_forecast_error.py
+python scripts/decompose_gap.py
 python scripts/make_figures.py
 ```
 
@@ -376,8 +404,9 @@ battery-dispatch-optimizer/
 │   ├── run_monte_carlo.py        distribución de ingresos bajo error de forecast
 │   ├── ablate_complementarity.py la ablación de la bomba de dinero
 │   ├── analyse_forecast_error.py por qué el Monte Carlo es una cota conservadora
+│   ├── decompose_gap.py          costo de horizonte vs. error de forecast
 │   └── make_figures.py           cada figura de este README
-├── tests/                        66 pruebas
+├── tests/                        69 pruebas
 └── reports/                      métricas en JSON, figuras en PNG
 ```
 

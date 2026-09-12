@@ -1,0 +1,13 @@
+{
+  "attributable_to_forecast_error_eur": 368653.15,
+  "attributable_to_horizon_eur": -854.65,
+  "commit_hours": 24,
+  "forecast_share_of_gap": 1.0023,
+  "full_year_perfect_foresight_eur": 2573658.64,
+  "horizon_hours": 48,
+  "horizon_share_of_gap": -0.0023,
+  "note": "Arm B is the same rolling-horizon dispatch as the deployed policy, handed the realised prices. Any shortfall it shows against the full-year bound is the price of planning 48 hours ahead and committing 24, and no forecaster can recover it.",
+  "rolling_horizon_forecast_eur": 2205860.14,
+  "rolling_horizon_true_prices_eur": 2574513.29,
+  "total_gap_eur": 367798.5
+}

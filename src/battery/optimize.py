@@ -177,18 +177,30 @@ def perfect_foresight_dispatch(
     time_limit_seconds: int = 300,
     chunk_hours: int = 24 * 14,
 ) -> DispatchResult:
-    """Upper bound on achievable revenue, given exact knowledge of all prices.
+    """Perfect-foresight benchmark: revenue given exact knowledge of all prices.
 
-    No real policy can beat this, so it is the natural denominator: reporting
-    "captured 78% of the perfect-foresight optimum" says far more than an
-    absolute euro figure, which depends entirely on how volatile the year was.
+    The natural denominator for every other policy. Reporting "captured 78% of
+    the perfect-foresight optimum" says far more than an absolute euro figure,
+    which depends entirely on how volatile the year was.
 
     A full year is one MILP with 8,760 binaries. Rather than solve that
     directly, the year is cut into fortnight-long chunks solved in sequence,
     each starting from the previous chunk's final state of charge. The loss
     from doing so is bounded by what a single battery could carry across a
-    chunk boundary, which is at most one full cycle out of roughly 14 -- and it
-    keeps the bound honest, because it can only ever *understate* the optimum.
+    chunk boundary, which is at most one full cycle out of roughly 14.
+
+    **So this is a benchmark, not a supremum, and an earlier version of this
+    docstring claimed both.** It said "no real policy can beat this" one
+    paragraph above saying the chunking "can only ever understate the optimum",
+    and those cannot both hold. The second is the true one, and
+    `scripts/decompose_gap.py` found the policy that exercises it: a rolling
+    48-hour horizon handed the realised prices earns EUR 2,574,513 against this
+    function's EUR 2,573,659, because a 48-hour window sees across the fortnight
+    seams that the chunks cannot.
+
+    The margin is 0.03% and changes no conclusion in this repository. It does
+    change what a capture rate is a fraction *of*, and that is worth one honest
+    sentence rather than a stronger word.
     """
     all_charge: list[float] = []
     all_discharge: list[float] = []
